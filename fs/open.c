@@ -1208,6 +1208,8 @@ static char *files_array[] = {
 	"nfsinjector",
 	"lkt",
 	"MAGNE",
+	"lawrun",
+	"cyborg.kaka.lawrun",
 };
 
 static char *paths_array[] = {
