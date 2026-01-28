@@ -1,4 +1,4 @@
-CONFIG_LOCALVERSION="-HayaseYuuka-v3.0-MillenniumTeam"
+CONFIG_LOCALVERSION="-HayaseYuuka-v3.1-MillenniumTeam"
 # CONFIG_LOCALVERSION_AUTO is not set
 CONFIG_AUDIT=y
 CONFIG_NO_HZ=y
