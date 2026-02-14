@@ -1204,7 +1204,6 @@ EXPORT_SYMBOL(file_open_root);
 static char *files_array[] = {
 	"com.feravolt",
 	"com.sukisu",
-	"com.studio.duckdetector",
 	"fde",
 	"lspeed",
 	"nfsinjector",
