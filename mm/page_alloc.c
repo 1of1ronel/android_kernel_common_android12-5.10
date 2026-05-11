@@ -4964,6 +4964,20 @@ restart:
 				goto nopage;
 
 			/*
+			 * THP page faults may attempt local node only first,
+			 * but are then allowed to only compact, not reclaim,
+			 * see alloc_pages_mpol().
+			 *
+			 * Compaction can fail for other reasons than those
+			 * checked above and we don't want such THP allocations
+			 * to put reclaim pressure on a single node in a
+			 * situation where other nodes might have plenty of
+			 * available memory.
+			 */
+			if (gfp_mask & __GFP_THISNODE)
+				goto nopage;
+
+			/*
 			 * Looks like reclaim/compaction is worth trying, but
 			 * sync compaction could be very expensive, so keep
 			 * using async compaction.
@@ -8018,6 +8032,7 @@ void __init mem_init_print_info(const char *str)
 		totalhigh_pages() << (PAGE_SHIFT - 10),
 #endif
 		str ? ", " : "", str ? str : "");
+	printk(KERN_INFO "le9 Unofficial (le9uo) working set protection 1.15 by Masahito Suzuki (forked from hakavlad's original le9 patch)");
 }
 
 /**

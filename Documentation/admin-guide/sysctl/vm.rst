@@ -126,7 +126,7 @@ swap and can lead to early OOM under memory pressure.
 
 The unit of measurement is the percentage of the total memory of the node.
 
-The default value is 0.
+The default value is 15.
 
 
 block_dump
@@ -175,7 +175,7 @@ types of pages cannot be reclaimed.
 
 The unit of measurement is the percentage of the total memory of the node.
 
-The default value is 1.
+The default value is 15.
 
 
 compact_memory
