@@ -31,6 +31,8 @@
 #include <linux/slab.h>
 #include <linux/tick.h>
 
+#include <trace/hooks/sched.h>
+
 #include <uapi/linux/sched/types.h>
 
 /**************************************************************
@@ -275,20 +277,36 @@ static unsigned int rfx_get_next_freq(struct rfx_policy *rfx_pol,
 				      unsigned long util, unsigned long max)
 {
 	struct cpufreq_policy *policy = rfx_pol->policy;
-	unsigned int freq;
+	unsigned int freq, idx, l_freq, h_freq;
+	unsigned long next_freq = 0;
 
 	if (arch_scale_freq_invariant())
 		freq = policy->cpuinfo.max_freq;
 	else
 		freq = policy->cur + (policy->cur >> 2);
 
-	freq = map_util_freq(util, freq, max);
+	trace_android_vh_map_util_freq(util, freq, max, &next_freq, policy,
+				       &rfx_pol->need_freq_update);
+	if (next_freq)
+		freq = next_freq;
+	else
+		freq = map_util_freq(util, freq, max);
 
 	if (freq == rfx_pol->cached_raw_freq && !rfx_pol->need_freq_update)
 		return rfx_pol->next_freq;
 
 	rfx_pol->cached_raw_freq = freq;
-	return cpufreq_driver_resolve_freq(policy, freq);
+	l_freq = cpufreq_driver_resolve_freq(policy, freq);
+	idx = cpufreq_frequency_table_target(policy, freq, CPUFREQ_RELATION_H);
+	h_freq = policy->freq_table[idx].frequency;
+	h_freq = clamp(h_freq, policy->min, policy->max);
+	if (l_freq <= h_freq || l_freq == policy->min)
+		return l_freq;
+
+	if (mult_frac(100, freq - h_freq, l_freq - h_freq) < 20)
+		return h_freq;
+
+	return l_freq;
 }
 
 /*
@@ -1007,6 +1025,11 @@ static int rfx_start(struct cpufreq_policy *policy)
 		/* Initialize idle-time baseline for hispeed busy% */
 		rfx_c->prev_idle_time = get_cpu_idle_time(cpu,
 					&rfx_c->prev_wall_time, 1);
+	}
+
+	for_each_cpu(cpu, policy->cpus) {
+		struct rfx_cpu *rfx_c = &per_cpu(rfx_cpu, cpu);
+
 		cpufreq_add_update_util_hook(cpu, &rfx_c->update_util,
 					     policy_is_shared(policy) ?
 							rfx_update_shared :
