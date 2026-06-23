@@ -9,28 +9,22 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Install Toolchain and Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y git build-essential bc bison flex libssl-dev libelf-dev libncurses-dev
-          git clone https://googlesource.com -b main $GITHUB_WORKSPACE/clang
+      - name: Set up Android NDK Clang
+        uses: eehouse/setup-ndk@v1
+        with:
+          ndk-version: r25c
 
       - name: Compile Network Drivers
         run: |
           export ARCH=arm64
           export SUBARCH=arm64
           
-          # Securely establish our cross-compiler directory path
-          export PATH=$GITHUB_WORKSPACE/clang/clang-r487747c/bin:$PATH
-          export CROSS_COMPILE=aarch64-linux-gnu-
+          # Automatically map the standalone NDK cross-compiler tools path
+          export PATH=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
+          export CROSS_COMPILE=aarch64-linux-android-
+          export CC=clang
           
-          # Branch validation verification step
-          if [ ! -f "arch/arm64/configs/gki_defconfig" ]; then
-            echo "ERROR: Working directory file missing! Verify you are on the android12-5.10 branch."
-            exit 1
-          fi
-          
-          # Inject target flags directly into the configuration profile blueprint
+          # Inject target wireless config flags directly into the profile blueprint
           echo "CONFIG_ATH9K_HTC=m" >> arch/arm64/configs/gki_defconfig
           echo "CONFIG_CFG80211=m" >> arch/arm64/configs/gki_defconfig
           echo "CONFIG_MAC80211=m" >> arch/arm64/configs/gki_defconfig
