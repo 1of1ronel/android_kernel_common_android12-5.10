@@ -9,29 +9,32 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Set up Android NDK Clang
-        uses: eehouse/setup-ndk@v1
-        with:
-          ndk-version: r25c
+      - name: Download Toolchain and Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git build-essential bc bison flex libssl-dev libelf-dev libncurses-dev wget unzip
+          # Download a specific lightweight standalone Android Clang toolchain
+          wget -q https://google.com
+          unzip -q android-ndk-r25c-linux.zip
 
       - name: Compile Network Drivers
         run: |
           export ARCH=arm64
           export SUBARCH=arm64
           
-          # Automatically map the standalone NDK cross-compiler tools path
-          export PATH=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
+          # Map paths directly to the downloaded toolchain
+          export PATH=$GITHUB_WORKSPACE/android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
           export CROSS_COMPILE=aarch64-linux-android-
           export CC=clang
           
-          # Inject target wireless config flags directly into the profile blueprint
+          # Inject wireless flags directly into the configuration profile blueprint
           echo "CONFIG_ATH9K_HTC=m" >> arch/arm64/configs/gki_defconfig
           echo "CONFIG_CFG80211=m" >> arch/arm64/configs/gki_defconfig
           echo "CONFIG_MAC80211=m" >> arch/arm64/configs/gki_defconfig
           echo "CONFIG_MODULE_SIG=n" >> arch/arm64/configs/gki_defconfig
           echo "CONFIG_MODULE_SIG_ALL=n" >> arch/arm64/configs/gki_defconfig
           
-          # Execute the make build parameters using your custom local kernel identity
+          # Execute compilation parameters matching your device identity
           make LOCALVERSION="-MahiruShiina-v3.1-GoogleLTS-Shirayuki428+" gki_defconfig
           make LOCALVERSION="-MahiruShiina-v3.1-GoogleLTS-Shirayuki428+" modules -j$(nproc)
 
