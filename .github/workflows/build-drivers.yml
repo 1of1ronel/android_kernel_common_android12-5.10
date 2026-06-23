@@ -1,0 +1,44 @@
+name: Build Atheros Modules
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Install Toolchain and Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git build-essential bc bison flex libssl-dev libelf-dev libncurses-dev
+          git clone https://googlesource.com -b main $GITHUB_WORKSPACE/clang
+
+      - name: Compile Network Drivers
+        run: |
+          export ARCH=arm64
+          export SUBARCH=arm64
+          export PATH=$GITHUB_WORKSPACE/clang/clang-r487747c/bin:$PATH
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          
+          # Inject target flags directly into the build config blueprint
+          echo "CONFIG_ATH9K_HTC=m" >> arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CFG80211=m" >> arch/arm64/configs/gki_defconfig
+          echo "CONFIG_MAC80211=m" >> arch/arm64/configs/gki_defconfig
+          echo "CONFIG_MODULE_SIG=n" >> arch/arm64/configs/gki_defconfig
+          echo "CONFIG_MODULE_SIG_ALL=n" >> arch/arm64/configs/gki_defconfig
+          
+          # Build specifically against your runtime Mahiru version magic
+          make LOCALVERSION="-MahiruShiina-v3.1-GoogleLTS-Shirayuki428+" gki_defconfig
+          make LOCALVERSION="-MahiruShiina-v3.1-GoogleLTS-Shirayuki428+" modules -j$(nproc)
+
+      - name: Upload Finished Drivers
+        uses: actions/upload-artifact@v4
+        with:
+          name: ath9k-android14-modules
+          path: |
+            drivers/net/wireless/ath/ath9k/ath9k_htc.ko
+            net/wireless/cfg80211.ko
+            net/mac80211/mac80211.ko
+            
