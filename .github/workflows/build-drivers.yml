@@ -19,7 +19,10 @@ jobs:
         run: |
           export ARCH=arm64
           export SUBARCH=arm64
-          export PATH=$GITHUB_WORKSPACE/clang/clang-r487747c/bin:$PATH
+          
+          # Dynamically locate the exact compiler location to prevent path errors
+          CLANG_PATH=$(find $GITHUB_WORKSPACE/clang -name "aarch64-linux-gnu-gcc" -o -name "clang" | head -n 1 | xargs dirname)
+          export PATH=$CLANG_PATH:$PATH
           export CROSS_COMPILE=aarch64-linux-gnu-
           
           # Inject target flags directly into the build config blueprint
@@ -41,4 +44,3 @@ jobs:
             drivers/net/wireless/ath/ath9k/ath9k_htc.ko
             net/wireless/cfg80211.ko
             net/mac80211/mac80211.ko
-            
